@@ -1,4 +1,4 @@
-const User = require('../models/user.model')
+const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 
 exports.signUp = (req, res) => {
@@ -34,7 +34,6 @@ exports.signUp = (req, res) => {
     });
 
     _user.save((err, data) => {
-      console.log("error : " + err);
       if (data) {
         return res.status(200).json({
           status: true,
@@ -53,24 +52,30 @@ exports.signUp = (req, res) => {
 };
 
 exports.signIn = (req, res) => {
-  User.findOne({ email: req.body.email }).exec((err, user) => {
-    if (err) return res.status(400).json({ err });
-    if (user) {
-      if (user.authenticate(req.body.password)) {
-        //authenticated successfully, so let's create a token that will manage the user session
-        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-          expiresIn: "1h",
-        });
+  if (req.body.email && req.body.password) {
+    User.findOne({ email: req.body.email }).exec((err, user) => {
+      if (err) return res.status(400).json({ err });
+      if (user) {
+        if (user.authenticate(req.body.password)) {
+          //authenticated successfully, so let's create a token that will manage the user session
+          const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, {
+            expiresIn: "1h",
+          });
 
-        const { firstName, lastName, email, role, fullName } = user;
-        return res.status(200).json({
-          token,
-          user: { firstName, lastName, email, role, fullName },
-        });
+          const { firstName, lastName, email, role, fullName } = user;
+          return res.status(200).json({
+            token,
+            user: { firstName, lastName, email, role, fullName },
+          });
+        }
+        return res.status(400).json({ message: "Wrong credentials!" });
+      } else {
+        return res.status(400).json({ message: "Something went wrong!" });
       }
-      return res.status(400).json({ message: "Wrong credentials!" });
-    } else {
-      return res.status(400).json({ message: "Something went wrong!" });
-    }
-  });
+    });
+  } else {
+    return res
+      .status(400)
+      .json({ message: "Please provide the login credentials!" });
+  }
 };

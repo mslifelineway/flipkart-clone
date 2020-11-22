@@ -3,8 +3,8 @@ const { validateRequest, isRequestValidated } = require("../../validators/auth")
 
 const router = require("express").Router();
 
-router.post("/signIn", signIn);
+router.post("/admin/signIn", signIn);
 
-router.post("/signUp", validateRequest, isRequestValidated, signUp);
+router.post("/admin/signUp", validateRequest, isRequestValidated, signUp);
 
 module.exports = router;

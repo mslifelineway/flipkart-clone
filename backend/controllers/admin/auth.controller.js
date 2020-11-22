@@ -30,7 +30,7 @@ exports.signUp = (req, res) => {
       email,
       password,
       username: Math.random().toString(),
-      role: process.env.ADMIN_ROLE
+      role: process.env.ADMIN_ROLE,
     });
 
     _user.save((err, data) => {
@@ -53,25 +53,33 @@ exports.signUp = (req, res) => {
 };
 
 exports.signIn = (req, res) => {
-  User.findOne({ email: req.body.email }).exec((err, user) => {
-    if (err) return res.status(400).json({ err });
-    if (user) {
-      if (user.authenticate(req.body.password) && user.role === process.env.ADMIN_ROLE) {
-        //authenticated successfully, so let's create a token that will manage the user session
-        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-          expiresIn: "1h",
-        });
+  if (!(req.body.email && req.body.password)) {
+    return res
+      .status(400)
+      .json({ message: "Please provide the login credentials!" });
+  } else {
+    User.findOne({ email: req.body.email }).exec((err, user) => {
+      if (err) return res.status(400).json({ err });
+      if (user) {
+        if (
+          user.authenticate(req.body.password) &&
+          user.role === process.env.ADMIN_ROLE
+        ) {
+          //authenticated successfully, so let's create a token that will manage the user session
+          const token = jwt.sign({ _id: user._id , role: user.role}, process.env.JWT_SECRET, {
+            expiresIn: "1h",
+          });
 
-        const { firstName, lastName, email, role, fullName } = user;
-        return res.status(200).json({
-          token,
-          user: { firstName, lastName, email, role, fullName },
-        });
+          const { firstName, lastName, email, role, fullName } = user;
+          return res.status(200).json({
+            token,
+            user: { firstName, lastName, email, role, fullName },
+          });
+        }
+        return res.status(400).json({ message: "Wrong credentials!" });
+      } else {
+        return res.status(400).json({ message: "Something went wrong!" });
       }
-      return res.status(400).json({ message: "Wrong credentials!" });
-    } else {
-      return res.status(400).json({ message: "Something went wrong!" });
-    }
-  });
+    });
+  }
 };
-
